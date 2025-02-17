@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: video-db
+    environment:
+      POSTGRES_DB: video-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ../environment:/docker-entrypoint-initdb.d
+    networks:
+      - video-network
+
+  video-processor:
+    image: video-processor:latest
+    container_name: video-processor
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/video-db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      spring.jpa.hibernate.ddl-auto: update
+    depends_on:
+      - postgres
+      - frame-analyzer
+    networks:
+      - video-network
+
+  frame-analyzer:
+    image: frame-analyzer:latest
+    container_name: frame-analyzer
+    ports:
+      - "8082:8080"
+    networks:
+      - video-network
+
+networks:
+  video-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
